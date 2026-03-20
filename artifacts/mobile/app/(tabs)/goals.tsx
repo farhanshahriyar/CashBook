@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import { formatAmount } from "@/utils/currency";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { SavingGoal, useFinance } from "@/context/FinanceContext";
@@ -66,9 +67,9 @@ function GoalCard({
 
       <View style={styles.goalAmounts}>
         <Text style={[styles.goalSaved, { color: C.text }]}>
-          ${goal.savedAmount.toFixed(0)}
+          {formatAmount(goal.savedAmount)}
           <Text style={[styles.goalTarget, { color: C.textSecondary }]}>
-            {" "}/ ${goal.targetAmount.toFixed(0)}
+            {" "}/ {formatAmount(goal.targetAmount)}
           </Text>
         </Text>
         <Text style={[styles.goalPct, { color: goal.color }]}>
@@ -85,7 +86,7 @@ function GoalCard({
 
       <View style={styles.goalFooter}>
         <Text style={[styles.goalRemaining, { color: C.textSecondary }]}>
-          ${remaining.toFixed(0)} to go
+          {formatAmount(remaining)} to go
         </Text>
         <Pressable
           onPress={() => onContribute(goal.id)}
@@ -254,11 +255,11 @@ function ContributeSheet({ goalId, onClose }: { goalId: string | null; onClose: 
               {goal.emoji} {goal.title}
             </Text>
             <Text style={[styles.contributeProgress, { color: C.textSecondary }]}>
-              ${goal.savedAmount.toFixed(2)} / ${goal.targetAmount.toFixed(2)}
+              {formatAmount(goal.savedAmount, 2)} / {formatAmount(goal.targetAmount, 2)}
             </Text>
             <ProgressBar progress={goal.savedAmount / goal.targetAmount} color={goal.color} height={8} style={{ marginVertical: 16 }} />
 
-            <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Amount to add ($)</Text>
+            <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Amount to add (BDT)</Text>
             <TextInput
               style={[styles.sheetInput, { borderColor: C.border, color: C.text, backgroundColor: C.backgroundSecondary }]}
               value={amount}
@@ -342,8 +343,8 @@ export default function GoalsScreen() {
             <Card elevated style={styles.totalCard}>
               <Text style={[styles.totalLabel, { color: C.textSecondary }]}>Total Saved</Text>
               <View style={styles.totalRow}>
-                <Text style={[styles.totalAmount, { color: C.text }]}>${totalSaved.toFixed(0)}</Text>
-                <Text style={[styles.totalTarget, { color: C.textSecondary }]}>/ ${totalTarget.toFixed(0)}</Text>
+                <Text style={[styles.totalAmount, { color: C.text }]}>{formatAmount(totalSaved)}</Text>
+                <Text style={[styles.totalTarget, { color: C.textSecondary }]}>/ {formatAmount(totalTarget)}</Text>
               </View>
               <ProgressBar
                 progress={totalTarget > 0 ? totalSaved / totalTarget : 0}

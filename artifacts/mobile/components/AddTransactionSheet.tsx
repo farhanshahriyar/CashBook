@@ -20,6 +20,7 @@ import {
   TransactionCategory,
   useFinance,
 } from "@/context/FinanceContext";
+import { CURRENCY_SYMBOL } from "@/utils/currency";
 import { getCategoryBg, getCategoryColor, getCategoryLabel } from "./CategoryIcon";
 
 const CATEGORIES: TransactionCategory[] = [
@@ -121,7 +122,7 @@ export function AddTransactionSheet({ visible, onClose }: Props) {
           </View>
 
           <View style={styles.amountContainer}>
-            <Text style={[styles.amountCurrency, { color: C.textSecondary }]}>$</Text>
+            <Text style={[styles.amountCurrency, { color: C.textSecondary }]}>{CURRENCY_SYMBOL}</Text>
             <TextInput
               style={[styles.amountInput, { color: C.text }]}
               value={amount}

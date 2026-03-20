@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import { formatAmount } from "@/utils/currency";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Budget, useFinance } from "@/context/FinanceContext";
@@ -32,19 +33,19 @@ function BudgetCard({ budget }: { budget: Budget }) {
               {getCategoryLabel(budget.category)}
             </Text>
             <Text style={[styles.budgetSub, { color: C.textSecondary }]}>
-              ${budget.spent.toFixed(2)} spent
+              {formatAmount(budget.spent, 2)} spent
             </Text>
           </View>
         </View>
         <View style={styles.budgetRight}>
           <Text style={[styles.budgetLimit, { color: C.textTertiary }]}>
-            /${budget.limit}
+            /{formatAmount(budget.limit)}
           </Text>
           {isOver ? (
             <Text style={[styles.overLabel, { color: C.expense }]}>Over budget</Text>
           ) : (
             <Text style={[styles.remainingLabel, { color: C.textSecondary }]}>
-              ${remaining.toFixed(0)} left
+              {formatAmount(remaining)} left
             </Text>
           )}
         </View>
@@ -99,7 +100,7 @@ export default function BudgetScreen() {
           <View style={styles.summaryTop}>
             <View>
               <Text style={[styles.summaryLabel, { color: C.textSecondary }]}>Total Budgeted</Text>
-              <Text style={[styles.summaryAmount, { color: C.text }]}>${totalBudgeted.toFixed(0)}</Text>
+              <Text style={[styles.summaryAmount, { color: C.text }]}>{formatAmount(totalBudgeted)}</Text>
             </View>
             <View style={[styles.savingsChip, { backgroundColor: savings >= 0 ? C.incomeLight : C.expenseLight }]}>
               <Feather
@@ -108,18 +109,18 @@ export default function BudgetScreen() {
                 color={savings >= 0 ? C.income : C.expense}
               />
               <Text style={[styles.savingsText, { color: savings >= 0 ? C.income : C.expense }]}>
-                {savings >= 0 ? "+" : ""}${savings.toFixed(0)} saved
+                {savings >= 0 ? "+" : "-"}{formatAmount(Math.abs(savings))} saved
               </Text>
             </View>
           </View>
 
           <View style={styles.summaryMid}>
             <Text style={[styles.summarySpent, { color: C.textSecondary }]}>
-              Spent: <Text style={{ color: C.text, fontFamily: "Inter_600SemiBold" }}>${totalSpent.toFixed(2)}</Text>
+              Spent: <Text style={{ color: C.text, fontFamily: "Inter_600SemiBold" }}>{formatAmount(totalSpent, 2)}</Text>
             </Text>
             <Text style={[styles.summarySpent, { color: C.textSecondary }]}>
               Remaining: <Text style={{ color: overallProgress > 1 ? C.expense : C.tint, fontFamily: "Inter_600SemiBold" }}>
-                ${(totalBudgeted - totalSpent).toFixed(2)}
+                {formatAmount(totalBudgeted - totalSpent, 2)}
               </Text>
             </Text>
           </View>

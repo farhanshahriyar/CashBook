@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import Colors from "@/constants/colors";
 import { Transaction } from "@/context/FinanceContext";
+import { formatAmount } from "@/utils/currency";
 import { CategoryIcon, getCategoryLabel } from "./CategoryIcon";
 
 type TransactionItemProps = {
@@ -80,7 +81,7 @@ export function TransactionItem({ transaction, onDelete, showDate = false }: Tra
               { color: isIncome ? C.income : C.expense },
             ]}
           >
-            {isIncome ? "+" : "-"}${transaction.amount.toFixed(2)}
+            {isIncome ? "+" : "-"}{formatAmount(transaction.amount, 2)}
           </Text>
           {showDate && (
             <Text style={[styles.date, { color: C.textTertiary }]}>

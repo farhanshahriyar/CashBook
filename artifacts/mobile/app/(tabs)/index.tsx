@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import { formatAmount } from "@/utils/currency";
 import { AddTransactionSheet } from "@/components/AddTransactionSheet";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { TransactionItem } from "@/components/TransactionItem";
@@ -29,7 +30,7 @@ function BalanceCard({ balance, income, expense }: { balance: number; income: nu
       <View style={styles.balanceHeader}>
         <View>
           <Text style={styles.balanceLabel}>Total Balance</Text>
-          <Text style={styles.balanceAmount}>${balance.toFixed(2)}</Text>
+          <Text style={styles.balanceAmount}>{formatAmount(balance, 2)}</Text>
         </View>
         <View style={styles.balanceAvatarWrap}>
           <View style={styles.balanceAvatar}>
@@ -45,7 +46,7 @@ function BalanceCard({ balance, income, expense }: { balance: number; income: nu
           </View>
           <View>
             <Text style={styles.statLabel}>Income</Text>
-            <Text style={styles.statValue}>${income.toFixed(0)}</Text>
+            <Text style={styles.statValue}>{formatAmount(income)}</Text>
           </View>
         </View>
         <View style={[styles.balanceDivider]} />
@@ -55,7 +56,7 @@ function BalanceCard({ balance, income, expense }: { balance: number; income: nu
           </View>
           <View>
             <Text style={styles.statLabel}>Expenses</Text>
-            <Text style={styles.statValue}>${expense.toFixed(0)}</Text>
+            <Text style={styles.statValue}>{formatAmount(expense)}</Text>
           </View>
         </View>
       </View>
@@ -112,7 +113,7 @@ export default function OverviewScreen() {
                           { color: isOver ? C.expense : C.textSecondary },
                         ]}
                       >
-                        ${budget.spent.toFixed(0)} / ${budget.limit}
+                        {formatAmount(budget.spent)} / {formatAmount(budget.limit)}
                       </Text>
                     </View>
                     <ProgressBar

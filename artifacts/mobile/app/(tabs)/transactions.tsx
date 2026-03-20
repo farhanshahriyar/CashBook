@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import { formatAmount } from "@/utils/currency";
 import { AddTransactionSheet } from "@/components/AddTransactionSheet";
 import { TransactionItem } from "@/components/TransactionItem";
 import { Card } from "@/components/ui/Card";
@@ -102,11 +103,11 @@ export default function TransactionsScreen() {
         <View style={styles.summaryRow}>
           <View style={[styles.summaryChip, { backgroundColor: C.incomeLight }]}>
             <Feather name="arrow-down" size={14} color={C.income} />
-            <Text style={[styles.summaryAmount, { color: C.income }]}>+${monthlyIncome.toFixed(0)}</Text>
+            <Text style={[styles.summaryAmount, { color: C.income }]}>+{formatAmount(monthlyIncome)}</Text>
           </View>
           <View style={[styles.summaryChip, { backgroundColor: C.expenseLight }]}>
             <Feather name="arrow-up" size={14} color={C.expense} />
-            <Text style={[styles.summaryAmount, { color: C.expense }]}>-${monthlyExpense.toFixed(0)}</Text>
+            <Text style={[styles.summaryAmount, { color: C.expense }]}>-{formatAmount(monthlyExpense)}</Text>
           </View>
         </View>
 
