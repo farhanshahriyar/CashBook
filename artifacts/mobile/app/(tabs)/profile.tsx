@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { CURRENCY_SYMBOL } from "@/utils/currency";
 import { useFinance } from "@/context/FinanceContext";
+import { useAuth } from "@/context/AuthContext";
 import { formatAmount } from "@/utils/currency";
 
 const C = Colors.light;
@@ -212,6 +213,7 @@ export default function ProfileScreen() {
   const bottomPad = Platform.OS === "web" ? 84 + 34 : insets.bottom + 80;
 
   const { totalBalance, monthlyIncome, monthlyExpense, transactions } = useFinance();
+  const { user, signOut } = useAuth();
 
   const [name, setName] = useState("Student");
   const [university, setUniversity] = useState("University of Dhaka");
@@ -262,12 +264,12 @@ export default function ProfileScreen() {
             <View style={styles.profileTop}>
               <View style={[styles.avatar, { backgroundColor: C.tint }]}>
                 <Text style={styles.avatarText}>
-                  {name.charAt(0).toUpperCase()}
+                  {(user?.email || name).charAt(0).toUpperCase()}
                 </Text>
               </View>
               <View style={styles.profileInfo}>
                 <Text style={[styles.profileName, { color: C.text }]}>
-                  {name}
+                  {user?.email || name}
                 </Text>
                 <Text style={[styles.profileUniversity, { color: C.textSecondary }]}>
                   {university}
@@ -446,14 +448,16 @@ export default function ProfileScreen() {
             />
             <View style={[styles.rowDivider, { backgroundColor: C.borderLight }]} />
             <SettingRow
-              icon="database"
-              iconBg="#DBEAFE"
-              iconColor="#2563EB"
-              label="Connect Supabase"
-              value="Coming soon"
-              onPress={() =>
-                Alert.alert("Supabase", "Database integration coming soon. Your data will sync across devices.")
-              }
+              icon="log-out"
+              iconBg="#FEE2E2"
+              iconColor="#DC2626"
+              label="Sign Out"
+              onPress={() => {
+                Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Sign Out", style: "destructive", onPress: signOut }
+                ]);
+              }}
             />
             <View style={[styles.rowDivider, { backgroundColor: C.borderLight }]} />
             <SettingRow
@@ -475,7 +479,7 @@ export default function ProfileScreen() {
               iconBg="#F1F5F9"
               iconColor="#475569"
               label="Version"
-              value="1.0.0"
+              value="initial release 0.0.9"
               showChevron={false}
             />
             <View style={[styles.rowDivider, { backgroundColor: C.borderLight }]} />
@@ -485,7 +489,7 @@ export default function ProfileScreen() {
               iconColor="#D97706"
               label="Rate the App"
               onPress={() =>
-                Alert.alert("Thanks!", "Rating will be available once the app is published.")
+                Alert.alert("Thanks for interest!", "Rating will be available once the app is published.")
               }
             />
           </View>

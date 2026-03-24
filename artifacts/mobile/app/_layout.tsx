@@ -6,24 +6,53 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FinanceProvider } from "@/context/FinanceContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { session, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === ("(auth)" as string);
+
+    if (!session && !inAuthGroup) {
+      // Redirect to login if unauthenticated
+      router.replace("/(auth)/login" as any);
+    } else if (session && inAuthGroup) {
+      // Redirect to tabs if authenticated
+      router.replace("/(tabs)" as any);
+    }
+  }, [session, isLoading, segments]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0A0A0A", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#FFFFFF" />
+      </View>
+    );
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -50,9 +79,11 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
-              <FinanceProvider>
-                <RootLayoutNav />
-              </FinanceProvider>
+              <AuthProvider>
+                <FinanceProvider>
+                  <RootLayoutNav />
+                </FinanceProvider>
+              </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

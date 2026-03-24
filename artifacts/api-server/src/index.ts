@@ -1,18 +1,21 @@
-import app from "./app";
-import { logger } from "./lib/logger";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const rawPort = process.env["PORT"];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
+// Load .env from workspace root BEFORE any other imports
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
-const port = Number(rawPort);
+// Dynamic imports so DATABASE_URL is available when @workspace/db initializes
+const { default: app } = await import("./app");
+const { logger } = await import("./lib/logger");
+
+const port = Number(process.env["PORT"] || 3000);
 
 if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
+  throw new Error(`Invalid PORT value: "${process.env["PORT"]}"`);
 }
 
 app.listen(port, () => {
