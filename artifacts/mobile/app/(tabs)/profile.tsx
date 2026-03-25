@@ -20,6 +20,7 @@ import { CURRENCY_SYMBOL } from "@/utils/currency";
 import { useFinance } from "@/context/FinanceContext";
 import { useAuth } from "@/context/AuthContext";
 import { formatAmount } from "@/utils/currency";
+import { supabase } from "@/utils/supabase";
 
 const C = Colors.light;
 
@@ -216,9 +217,10 @@ export default function ProfileScreen() {
   const { totalBalance, monthlyIncome, monthlyExpense, transactions } = useFinance();
   const { user, signOut } = useAuth();
 
-  const [name, setName] = useState("Student");
-  const [university, setUniversity] = useState("University of Dhaka");
-  const [major, setMajor] = useState("Computer Science");
+  const metadata = user?.user_metadata || {};
+  const [name, setName] = useState(metadata.displayName || "Student");
+  const [university, setUniversity] = useState(metadata.university || "University of Dhaka");
+  const [major, setMajor] = useState(metadata.major || "Computer Science");
   const [showEditModal, setShowEditModal] = useState(false);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -510,13 +512,16 @@ export default function ProfileScreen() {
         name={name}
         university={university}
         major={major}
-        onSave={(n, u, m) => {
+        onSave={async (n, u, m) => {
           setName(n);
           setUniversity(u);
           setMajor(m);
           if (Platform.OS !== "web") {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           }
+          await supabase.auth.updateUser({
+            data: { displayName: n, university: u, major: m }
+          });
         }}
         onClose={() => setShowEditModal(false)}
       />

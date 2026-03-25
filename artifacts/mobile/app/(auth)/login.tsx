@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Toast } from "@/components/Toast";
@@ -22,6 +23,7 @@ const C = Colors.light;
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -46,13 +48,18 @@ export default function LoginScreen() {
         });
         if (error) throw error;
       } else {
+        // Clear any stale local auth state before creating a brand-new account.
+        await supabase.auth.signOut({ scope: "local" });
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
         if (error) throw error;
         // With email confirmation disabled, data.session will exist
-        // and AuthContext will auto-redirect them.
+        if (data.session) {
+          router.replace("/(onboarding)/step1");
+        }
       }
     } catch (error: any) {
       Toast.show({

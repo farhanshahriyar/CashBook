@@ -24,21 +24,32 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
-  const { session, isLoading } = useAuth();
+  const { session, user, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === ("(auth)" as string);
+    const inAuthGroup = segments[0] === "(auth)";
+    const onboardingSteps = new Set(["step1", "step2", "step3", "step4"]);
+    const inOnboardingGroup =
+      segments[0] === "(onboarding)" ||
+      onboardingSteps.has(segments[0] ?? "") ||
+      onboardingSteps.has(segments[segments.length - 1] ?? "");
+
+    const hasCompletedOnboarding = !!user?.user_metadata?.displayName;
 
     if (!session && !inAuthGroup) {
       router.replace("/(auth)/login" as any);
-    } else if (session && inAuthGroup) {
-      router.replace("/(tabs)" as any);
+    } else if (session) {
+      if (!hasCompletedOnboarding && !inOnboardingGroup) {
+        router.replace("/(onboarding)/step1" as any);
+      } else if (hasCompletedOnboarding && (inAuthGroup || inOnboardingGroup)) {
+        router.replace("/(tabs)" as any);
+      }
     }
-  }, [session, isLoading, segments]);
+  }, [session, user, isLoading, segments]);
 
   if (isLoading) {
     return (
@@ -52,6 +63,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
     </Stack>
   );
 }
