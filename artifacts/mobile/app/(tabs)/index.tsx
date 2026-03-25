@@ -48,25 +48,44 @@ function BalanceCard({
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const avatarInitial = getAvatarInitial(displayName);
+  const { signOut } = useAuth();
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
 
   return (
     <View style={[styles.balanceCard, { paddingTop: topPad + 16 }]}>
-      <View style={styles.balanceHeader}>
-        <View>
-          <Text style={styles.balanceLabel}>Total Balance</Text>
-          <Text style={styles.balanceAmount}>{formatAmount(balance, 2)}</Text>
+      <View style={styles.topRow}>
+        <View style={styles.welcomeBlock}>
+          <Text style={styles.welcomeLabel}>Welcome,</Text>
+          <Text style={styles.welcomeName} numberOfLines={1}>
+            {displayName} <Text style={styles.welcomeWave}>👋</Text>
+          </Text>
         </View>
-        <View style={styles.balanceAvatarWrap}>
-          <View style={styles.welcomeBlock}>
-            <Text style={styles.welcomeLabel}>Welcome,</Text>
-            <Text style={styles.welcomeName} numberOfLines={1}>
-              {displayName} <Text style={styles.welcomeWave}>👋</Text>
-            </Text>
-          </View>
-          <View style={styles.balanceAvatar}>
-            <Text style={styles.balanceAvatarText}>{avatarInitial}</Text>
-          </View>
+        <View style={styles.avatarMenuWrap}>
+          <Pressable onPress={() => setShowAvatarMenu((current) => !current)}>
+            <View style={styles.balanceAvatar}>
+              <Text style={styles.balanceAvatarText}>{avatarInitial}</Text>
+            </View>
+          </Pressable>
+          {showAvatarMenu ? (
+            <View style={styles.avatarMenu}>
+              <Pressable
+                style={styles.avatarMenuItem}
+                onPress={() => {
+                  setShowAvatarMenu(false);
+                  signOut();
+                }}
+              >
+                <Feather name="log-out" size={16} color={C.expense} />
+                <Text style={styles.avatarMenuText}>Logout</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
+      </View>
+
+      <View style={styles.balanceCenter}>
+        <Text style={styles.balanceLabel}>Total Balance</Text>
+        <Text style={styles.balanceAmount}>{formatAmount(balance, 2)}</Text>
       </View>
 
       <View style={styles.balanceStats}>
@@ -216,35 +235,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 32,
   },
-  balanceHeader: {
+  topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 28,
+    marginBottom: 24,
     gap: 16,
+  },
+  balanceCenter: {
+    alignItems: "center",
+    marginBottom: 28,
   },
   balanceLabel: {
     color: "rgba(255,255,255,0.8)",
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     marginBottom: 6,
+    textAlign: "center",
   },
   balanceAmount: {
     color: "#fff",
     fontSize: 38,
     fontFamily: "Inter_700Bold",
     letterSpacing: -1,
-  },
-  balanceAvatarWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flexShrink: 1,
-    maxWidth: "58%",
+    textAlign: "center",
   },
   welcomeBlock: {
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     flexShrink: 1,
+    maxWidth: "72%",
   },
   welcomeLabel: {
     color: "rgba(255,255,255,0.72)",
@@ -256,10 +275,15 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
-    textAlign: "right",
+    textAlign: "left",
   },
   welcomeWave: {
     fontSize: 16,
+  },
+  avatarMenuWrap: {
+    alignItems: "flex-end",
+    position: "relative",
+    zIndex: 20,
   },
   balanceAvatar: {
     width: 44,
@@ -273,6 +297,32 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontFamily: "Inter_700Bold",
+  },
+  avatarMenu: {
+    position: "absolute",
+    top: 52,
+    right: 0,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 8,
+    minWidth: 124,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  avatarMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  avatarMenuText: {
+    color: C.expense,
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
   },
   balanceStats: {
     flexDirection: "row",
