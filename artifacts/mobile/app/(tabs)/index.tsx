@@ -18,12 +18,36 @@ import { TransactionItem } from "@/components/TransactionItem";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useFinance } from "@/context/FinanceContext";
+import { useAuth } from "@/context/AuthContext";
 
 const C = Colors.light;
 
-function BalanceCard({ balance, income, expense }: { balance: number; income: number; expense: number }) {
+function getDisplayName(user: { user_metadata?: { displayName?: string } | null; email?: string | null } | null) {
+  const displayName = user?.user_metadata?.displayName?.trim();
+  if (displayName) return displayName;
+
+  const emailName = user?.email?.split("@")[0]?.trim();
+  return emailName || "Student";
+}
+
+function getAvatarInitial(name: string) {
+  return name.trim().charAt(0).toUpperCase() || "S";
+}
+
+function BalanceCard({
+  balance,
+  income,
+  expense,
+  displayName,
+}: {
+  balance: number;
+  income: number;
+  expense: number;
+  displayName: string;
+}) {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const avatarInitial = getAvatarInitial(displayName);
 
   return (
     <View style={[styles.balanceCard, { paddingTop: topPad + 16 }]}>
@@ -33,8 +57,14 @@ function BalanceCard({ balance, income, expense }: { balance: number; income: nu
           <Text style={styles.balanceAmount}>{formatAmount(balance, 2)}</Text>
         </View>
         <View style={styles.balanceAvatarWrap}>
+          <View style={styles.welcomeBlock}>
+            <Text style={styles.welcomeLabel}>Welcome,</Text>
+            <Text style={styles.welcomeName} numberOfLines={1}>
+              {displayName} <Text style={styles.welcomeWave}>👋</Text>
+            </Text>
+          </View>
           <View style={styles.balanceAvatar}>
-            <Text style={styles.balanceAvatarText}>S</Text>
+            <Text style={styles.balanceAvatarText}>{avatarInitial}</Text>
           </View>
         </View>
       </View>
@@ -68,7 +98,9 @@ export default function OverviewScreen() {
   const insets = useSafeAreaInsets();
   const bottomPad = Platform.OS === "web" ? 84 + 34 : insets.bottom + 80;
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const { user } = useAuth();
   const { transactions, budgets, totalBalance, monthlyIncome, monthlyExpense, deleteTransaction } = useFinance();
+  const displayName = getDisplayName(user);
 
   const recentTransactions = transactions.slice(0, 5);
   const topBudgets = budgets.slice(0, 3);
@@ -85,6 +117,7 @@ export default function OverviewScreen() {
           balance={totalBalance}
           income={monthlyIncome}
           expense={monthlyExpense}
+          displayName={displayName}
         />
 
         <View style={styles.body}>
@@ -188,6 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 28,
+    gap: 16,
   },
   balanceLabel: {
     color: "rgba(255,255,255,0.8)",
@@ -201,7 +235,32 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     letterSpacing: -1,
   },
-  balanceAvatarWrap: {},
+  balanceAvatarWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flexShrink: 1,
+    maxWidth: "58%",
+  },
+  welcomeBlock: {
+    alignItems: "flex-end",
+    flexShrink: 1,
+  },
+  welcomeLabel: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 2,
+  },
+  welcomeName: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "right",
+  },
+  welcomeWave: {
+    fontSize: 16,
+  },
   balanceAvatar: {
     width: 44,
     height: 44,

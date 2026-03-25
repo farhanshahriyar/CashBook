@@ -33,6 +33,18 @@ function splitDisplayName(displayName: string) {
   };
 }
 
+function getDisplayName(user: { user_metadata?: { displayName?: string } | null; email?: string | null } | null) {
+  const displayName = user?.user_metadata?.displayName?.trim();
+  if (displayName) return displayName;
+
+  const emailName = user?.email?.split("@")[0]?.trim();
+  return emailName || "Student";
+}
+
+function getAvatarInitial(name: string) {
+  return name.trim().charAt(0).toUpperCase() || "S";
+}
+
 type SettingRowProps = {
   icon: string;
   iconBg: string;
@@ -227,7 +239,8 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
 
   const metadata = user?.user_metadata || {};
-  const [name, setName] = useState(metadata.displayName || "Student");
+  const initialDisplayName = getDisplayName(user);
+  const [name, setName] = useState(initialDisplayName);
   const [university, setUniversity] = useState(metadata.university || "University of Dhaka");
   const [major, setMajor] = useState(metadata.major || "Computer Science");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -257,6 +270,7 @@ export default function ProfileScreen() {
 
   const txCount = transactions.length;
   const savings = monthlyIncome - monthlyExpense;
+  const avatarInitial = getAvatarInitial(name);
 
   return (
     <>
@@ -276,12 +290,12 @@ export default function ProfileScreen() {
             <View style={styles.profileTop}>
               <View style={[styles.avatar, { backgroundColor: C.tint }]}>
                 <Text style={styles.avatarText}>
-                  {(user?.email || name).charAt(0).toUpperCase()}
+                  {avatarInitial}
                 </Text>
               </View>
               <View style={styles.profileInfo}>
                 <Text style={[styles.profileName, { color: C.text }]}>
-                  {user?.email || name}
+                  {name}
                 </Text>
                 <Text style={[styles.profileUniversity, { color: C.textSecondary }]}>
                   {university}
