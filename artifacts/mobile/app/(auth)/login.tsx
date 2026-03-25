@@ -24,6 +24,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignIn, setIsSignIn] = useState(true);
 
@@ -50,17 +51,8 @@ export default function LoginScreen() {
           password,
         });
         if (error) throw error;
-        
-        // If email confirmation is disabled in Supabase, data.session will exist
-        if (!data.session) {
-          Toast.show({
-            type: "success",
-            text1: "Check your email",
-            text2: "Account created successfully! Please confirm your email.",
-          });
-          setIsSignIn(true);
-        }
-        // If it does exist, AuthContext will auto-redirect them.
+        // With email confirmation disabled, data.session will exist
+        // and AuthContext will auto-redirect them.
       }
     } catch (error: any) {
       Toast.show({
@@ -123,18 +115,36 @@ export default function LoginScreen() {
               selectionColor={C.tint}
             />
             
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: C.backgroundSecondary, color: C.text, marginTop: 16 }
-              ]}
-              placeholder="Password"
-              placeholderTextColor={C.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              selectionColor={C.tint}
-            />
+            <View style={{ position: "relative", marginTop: 16 }}>
+              <TextInput
+                style={[
+                  styles.input,
+                  { backgroundColor: C.backgroundSecondary, color: C.text, paddingRight: 48 }
+                ]}
+                placeholder="Password"
+                placeholderTextColor={C.textTertiary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                selectionColor={C.tint}
+              />
+              <Pressable
+                style={{
+                  position: "absolute",
+                  right: 16,
+                  top: 0,
+                  bottom: 0,
+                  justifyContent: "center",
+                }}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Feather 
+                  name={showPassword ? "eye" : "eye-off"} 
+                  size={20} 
+                  color={C.textSecondary} 
+                />
+              </Pressable>
+            </View>
           </View>
         </View>
 
