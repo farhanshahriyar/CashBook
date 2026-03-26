@@ -303,6 +303,7 @@ export default function ProfileScreen() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showFeaturesModal, setShowFeaturesModal] = useState(false);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [weeklyReport, setWeeklyReport] = useState(true);
@@ -688,9 +689,10 @@ export default function ProfileScreen() {
               icon="info"
               iconBg="#F1F5F9"
               iconColor="#475569"
-              label="Version"
+              label="Changelog"
               value="initial release 0.0.9"
               showChevron={false}
+              onPress={() => setShowFeaturesModal(true)}
             />
             <View style={[styles.rowDivider, { backgroundColor: C.borderLight }]} />
             <SettingRow
@@ -851,6 +853,84 @@ export default function ProfileScreen() {
                 <Text style={signOutStyles.btnSignOutText}>Sign Out</Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Features Modal */}
+      <Modal
+        visible={showFeaturesModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFeaturesModal(false)}
+      >
+        <View style={featuresStyles.overlay}>
+          <Pressable
+            style={featuresStyles.backdropTouch}
+            onPress={() => setShowFeaturesModal(false)}
+          />
+          <View style={[featuresStyles.card, { backgroundColor: C.backgroundCard }]}>
+            <View style={featuresStyles.headerRow}>
+              <View style={featuresStyles.iconCircle}>
+                <Feather name="layers" size={24} color="#3B82F6" />
+              </View>
+              <View>
+                <Text style={[featuresStyles.title, { color: C.text }]}>What's New</Text>
+                <Text style={[featuresStyles.subtitle, { color: C.textSecondary }]}>CashBook v0.0.9 Features</Text>
+              </View>
+            </View>
+
+            <View style={featuresStyles.featureList}>
+              <View style={featuresStyles.featureRow}>
+                <View style={featuresStyles.featureIcon}>
+                  <Feather name="shield" size={18} color="#10B981" />
+                </View>
+                <View style={featuresStyles.featureTextContent}>
+                  <Text style={[featuresStyles.featureTitle, { color: C.text }]}>Biometric Lock</Text>
+                  <Text style={[featuresStyles.featureDesc, { color: C.textSecondary }]}>Your financial data is protected by native FaceID and TouchID hardware.</Text>
+                </View>
+              </View>
+
+              <View style={featuresStyles.featureRow}>
+                <View style={featuresStyles.featureIcon}>
+                  <Feather name="target" size={18} color="#8B5CF6" />
+                </View>
+                <View style={featuresStyles.featureTextContent}>
+                  <Text style={[featuresStyles.featureTitle, { color: C.text }]}>Active Goals</Text>
+                  <Text style={[featuresStyles.featureDesc, { color: C.textSecondary }]}>Visually map your savings targets with dynamic progress bars and emojis.</Text>
+                </View>
+              </View>
+
+              <View style={featuresStyles.featureRow}>
+                <View style={featuresStyles.featureIcon}>
+                  <Feather name="file-text" size={18} color="#F59E0B" />
+                </View>
+                <View style={featuresStyles.featureTextContent}>
+                  <Text style={[featuresStyles.featureTitle, { color: C.text }]}>PDF Export</Text>
+                  <Text style={[featuresStyles.featureDesc, { color: C.textSecondary }]}>Generate and share beautiful financial HTML reports natively via iOS/Android.</Text>
+                </View>
+              </View>
+
+              <View style={featuresStyles.featureRow}>
+                <View style={featuresStyles.featureIcon}>
+                  <Feather name="cloud" size={18} color="#06B6D4" />
+                </View>
+                <View style={featuresStyles.featureTextContent}>
+                  <Text style={[featuresStyles.featureTitle, { color: C.text }]}>Cloud Edge Sync</Text>
+                  <Text style={[featuresStyles.featureDesc, { color: C.textSecondary }]}>Your data instantly syncs securely across all devices through our storage.</Text>
+                </View>
+              </View>
+            </View>
+
+            <Pressable
+              onPress={() => setShowFeaturesModal(false)}
+              style={({ pressed }) => [
+                featuresStyles.btnDone,
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Text style={featuresStyles.btnDoneText}>Got it</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -1330,6 +1410,98 @@ const signOutStyles = StyleSheet.create({
   },
   btnSignOutText: {
     fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
+  },
+});
+
+const featuresStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  backdropTouch: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  card: {
+    width: "100%",
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginBottom: 28,
+  },
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+  },
+  featureList: {
+    gap: 22,
+    marginBottom: 32,
+  },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+  featureIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "#F8FAFC",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  featureTextContent: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 4,
+  },
+  featureDesc: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 20,
+  },
+  btnDone: {
+    width: "100%",
+    backgroundColor: "#3B82F6",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnDoneText: {
+    fontSize: 16,
     fontFamily: "Inter_600SemiBold",
     color: "#fff",
   },
