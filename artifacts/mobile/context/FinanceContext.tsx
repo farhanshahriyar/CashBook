@@ -14,6 +14,7 @@ import {
   fetchGoals,
   createGoal as apiCreateGoal,
   updateGoalSavedAmount as apiUpdateGoalSavedAmount,
+  updateGoal as apiUpdateGoalFull,
   deleteGoal as apiDeleteGoal,
   type ApiTransaction,
   type ApiBudget,
@@ -67,6 +68,7 @@ type FinanceContextType = {
   deleteTransaction: (id: string) => void;
   updateBudget: (id: string, spent: number) => void;
   addSavingGoal: (g: Omit<SavingGoal, "id">) => void;
+  editSavingGoal: (id: string, data: Partial<Omit<SavingGoal, "id">>) => void;
   updateSavingGoal: (id: string, savedAmount: number) => void;
   deleteSavingGoal: (id: string) => void;
   totalBalance: number;
@@ -151,6 +153,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setSavingGoals((prev) => [created as SavingGoal, ...prev]);
       } catch (err) {
         console.error("Failed to create goal:", err);
+        throw err;
       }
     },
     []
@@ -165,6 +168,22 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         );
       } catch (err) {
         console.error("Failed to update goal:", err);
+        throw err;
+      }
+    },
+    []
+  );
+
+  const editSavingGoal = useCallback(
+    async (id: string, data: Partial<Omit<SavingGoal, "id">>) => {
+      try {
+        const updated = await apiUpdateGoalFull(id, data);
+        setSavingGoals((prev) =>
+          prev.map((g) => (g.id === id ? { ...g, ...updated } : g))
+        );
+      } catch (err) {
+        console.error("Failed to edit goal:", err);
+        throw err;
       }
     },
     []
@@ -177,6 +196,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setSavingGoals((prev) => prev.filter((g) => g.id !== id));
       } catch (err) {
         console.error("Failed to delete goal:", err);
+        throw err;
       }
     },
     []
@@ -215,6 +235,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         deleteTransaction,
         updateBudget,
         addSavingGoal,
+        editSavingGoal,
         updateSavingGoal,
         deleteSavingGoal,
         totalBalance,

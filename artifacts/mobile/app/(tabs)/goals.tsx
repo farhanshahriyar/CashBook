@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   Platform,
@@ -17,6 +18,7 @@ import Colors from "@/constants/colors";
 import { formatAmount } from "@/utils/currency";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { Toast } from "@/components/Toast";
 import { SavingGoal, useFinance } from "@/context/FinanceContext";
 
 const C = Colors.light;
@@ -27,18 +29,26 @@ function daysUntil(iso: string): number {
   return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / 86400000));
 }
 
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 function GoalCard({
   goal,
+  onEdit,
   onDelete,
   onContribute,
 }: {
   goal: SavingGoal;
+  onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onContribute: (id: string) => void;
 }) {
-  const progress = goal.savedAmount / goal.targetAmount;
+  const progress = Math.min(1, goal.savedAmount / goal.targetAmount);
   const days = daysUntil(goal.deadline);
-  const remaining = goal.targetAmount - goal.savedAmount;
+  const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+  const isCompleted = goal.savedAmount >= goal.targetAmount;
 
   return (
     <Card style={styles.goalCard}>
@@ -52,17 +62,26 @@ function GoalCard({
               {goal.title}
             </Text>
             <Text style={[styles.goalDeadline, { color: C.textSecondary }]}>
-              {days} days left
+              {isCompleted ? "✅ Completed" : `${days} days left`}
             </Text>
           </View>
         </View>
-        <Pressable
-          onPress={() => onDelete(goal.id)}
-          style={styles.deleteBtn}
-          hitSlop={8}
-        >
-          <Feather name="trash-2" size={16} color={C.textTertiary} />
-        </Pressable>
+        <View style={styles.cardActions}>
+          <Pressable
+            onPress={() => onEdit(goal.id)}
+            style={styles.actionBtn}
+            hitSlop={8}
+          >
+            <Feather name="edit-2" size={16} color={C.textSecondary} />
+          </Pressable>
+          <Pressable
+            onPress={() => onDelete(goal.id)}
+            style={styles.actionBtn}
+            hitSlop={8}
+          >
+            <Feather name="trash-2" size={16} color={C.textTertiary} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.goalAmounts}>
@@ -86,18 +105,28 @@ function GoalCard({
 
       <View style={styles.goalFooter}>
         <Text style={[styles.goalRemaining, { color: C.textSecondary }]}>
-          {formatAmount(remaining)} to go
+          {isCompleted ? "Goal reached! 🎉" : `${formatAmount(remaining)} to go`}
         </Text>
-        <Pressable
-          onPress={() => onContribute(goal.id)}
-          style={[styles.contributeBtn, { backgroundColor: goal.color + "20" }]}
-        >
-          <Text style={[styles.contributeBtnText, { color: goal.color }]}>+ Add Funds</Text>
-        </Pressable>
+        {!isCompleted && (
+          <Pressable
+            onPress={() => onContribute(goal.id)}
+            style={[styles.contributeBtn, { backgroundColor: goal.color + "20" }]}
+          >
+            <Text style={[styles.contributeBtnText, { color: goal.color }]}>+ Add Funds</Text>
+          </Pressable>
+        )}
       </View>
     </Card>
   );
 }
+
+const DEADLINE_PRESETS = [
+  { label: "30 days", days: 30 },
+  { label: "60 days", days: 60 },
+  { label: "90 days", days: 90 },
+  { label: "6 months", days: 180 },
+  { label: "1 year", days: 365 },
+];
 
 function AddGoalSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
@@ -107,29 +136,58 @@ function AddGoalSheet({ visible, onClose }: { visible: boolean; onClose: () => v
   const [initial, setInitial] = useState("");
   const [emoji, setEmoji] = useState("🎯");
   const [color, setColor] = useState("#2563EB");
+  const [selectedPreset, setSelectedPreset] = useState(2); // default 90 days
+  const [loading, setLoading] = useState(false);
 
   const COLORS = ["#2563EB", "#16A34A", "#D97706", "#DC2626", "#7C3AED", "#0EA5E9", "#EC4899"];
   const EMOJIS = ["🎯", "💻", "✈️", "🛡️", "📚", "🏠", "🎮", "🚗", "👟", "💎"];
 
-  const handleCreate = () => {
-    if (!title || !target) return;
+  // Reset form state when modal opens
+  useEffect(() => {
+    if (visible) {
+      setTitle("");
+      setTarget("");
+      setInitial("");
+      setEmoji("🎯");
+      setColor("#2563EB");
+      setSelectedPreset(2);
+      setLoading(false);
+    }
+  }, [visible]);
+
+  const handleCreate = async () => {
+    if (!title || !target || loading) return;
     const targetNum = parseFloat(target);
     const initialNum = parseFloat(initial) || 0;
     if (isNaN(targetNum) || targetNum <= 0) return;
+    if (initialNum > targetNum) {
+      Toast.show({ type: "error", text1: "Invalid Amount", text2: "Starting amount can't exceed the target." });
+      return;
+    }
 
+    setLoading(true);
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-    addSavingGoal({
-      title,
-      targetAmount: targetNum,
-      savedAmount: initialNum,
-      deadline: new Date(Date.now() + 90 * 86400000).toISOString(),
-      emoji,
-      color,
-    });
-    setTitle(""); setTarget(""); setInitial(""); setEmoji("🎯"); setColor("#2563EB");
-    onClose();
+
+    try {
+      const deadlineDays = DEADLINE_PRESETS[selectedPreset].days;
+      await addSavingGoal({
+        title,
+        targetAmount: targetNum,
+        savedAmount: initialNum,
+        deadline: new Date(Date.now() + deadlineDays * 86400000).toISOString(),
+        emoji,
+        color,
+      });
+      Toast.show({ type: "success", text1: "Goal Created", text2: `"${title}" has been added.` });
+      onClose();
+    } catch (err) {
+      console.error("Failed to create goal:", err);
+      Toast.show({ type: "error", text1: "Creation Failed", text2: "Could not create goal. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -174,7 +232,7 @@ function AddGoalSheet({ visible, onClose }: { visible: boolean; onClose: () => v
             placeholderTextColor={C.textTertiary}
           />
 
-          <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>Target Amount ($)</Text>
+          <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>Target Amount (BDT)</Text>
           <TextInput
             style={[styles.sheetInput, { borderColor: C.border, color: C.text, backgroundColor: C.backgroundSecondary }]}
             value={target}
@@ -184,7 +242,7 @@ function AddGoalSheet({ visible, onClose }: { visible: boolean; onClose: () => v
             keyboardType="decimal-pad"
           />
 
-          <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>Starting Amount ($)</Text>
+          <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>Starting Amount (BDT)</Text>
           <TextInput
             style={[styles.sheetInput, { borderColor: C.border, color: C.text, backgroundColor: C.backgroundSecondary }]}
             value={initial}
@@ -193,6 +251,35 @@ function AddGoalSheet({ visible, onClose }: { visible: boolean; onClose: () => v
             placeholderTextColor={C.textTertiary}
             keyboardType="decimal-pad"
           />
+
+          <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>Deadline</Text>
+          <View style={styles.presetRow}>
+            {DEADLINE_PRESETS.map((preset, idx) => (
+              <Pressable
+                key={preset.days}
+                onPress={() => setSelectedPreset(idx)}
+                style={[
+                  styles.presetBtn,
+                  {
+                    backgroundColor: selectedPreset === idx ? C.tint : C.backgroundSecondary,
+                    borderColor: selectedPreset === idx ? C.tint : C.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.presetBtnText,
+                    { color: selectedPreset === idx ? "#fff" : C.text },
+                  ]}
+                >
+                  {preset.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.deadlineHint, { color: C.textTertiary }]}>
+            Target date: {formatDate(new Date(Date.now() + DEADLINE_PRESETS[selectedPreset].days * 86400000).toISOString())}
+          </Text>
 
           <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>Color</Text>
           <View style={styles.colorRow}>
@@ -213,9 +300,198 @@ function AddGoalSheet({ visible, onClose }: { visible: boolean; onClose: () => v
 
           <Pressable
             onPress={handleCreate}
-            style={[styles.createBtn, { backgroundColor: color }]}
+            disabled={loading || !title || !target}
+            style={[styles.createBtn, { backgroundColor: color, opacity: loading || !title || !target ? 0.6 : 1 }]}
           >
-            <Text style={styles.createBtnText}>Create Goal</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.createBtnText}>Create Goal</Text>
+            )}
+          </Pressable>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+function EditGoalSheet({ goalId, onClose }: { goalId: string | null; onClose: () => void }) {
+  const insets = useSafeAreaInsets();
+  const { savingGoals, editSavingGoal } = useFinance();
+  const goal = savingGoals.find((g) => g.id === goalId);
+
+  const [title, setTitle] = useState("");
+  const [target, setTarget] = useState("");
+  const [emoji, setEmoji] = useState("🎯");
+  const [color, setColor] = useState("#2563EB");
+  const [selectedPreset, setSelectedPreset] = useState(2);
+  const [loading, setLoading] = useState(false);
+
+  const COLORS = ["#2563EB", "#16A34A", "#D97706", "#DC2626", "#7C3AED", "#0EA5E9", "#EC4899"];
+  const EMOJIS = ["🎯", "💻", "✈️", "🛡️", "📚", "🏠", "🎮", "🚗", "👟", "💎"];
+
+  // Initialize form with goal data
+  useEffect(() => {
+    if (goal && goalId) {
+      setTitle(goal.title);
+      setTarget(goal.targetAmount.toString());
+      setEmoji(goal.emoji);
+      setColor(goal.color);
+
+      // Calculate closest preset based on deadline
+      const daysLeft = daysUntil(goal.deadline);
+      const closest = DEADLINE_PRESETS.reduce((prev, curr, idx) => {
+        return Math.abs(curr.days - daysLeft) < Math.abs(DEADLINE_PRESETS[prev].days - daysLeft) ? idx : prev;
+      }, 0);
+      setSelectedPreset(closest);
+
+      setLoading(false);
+    }
+  }, [goalId, goal]);
+
+  const handleSave = async () => {
+    if (!goal || !title || !target || loading) return;
+    const targetNum = parseFloat(target);
+    if (isNaN(targetNum) || targetNum <= 0) return;
+
+    // Don't allow target to be less than what's already saved
+    if (targetNum < goal.savedAmount) {
+      Toast.show({ type: "error", text1: "Invalid Target", text2: "Target cannot be less than the saved amount." });
+      return;
+    }
+
+    setLoading(true);
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+
+    try {
+      const deadlineDays = DEADLINE_PRESETS[selectedPreset].days;
+      await editSavingGoal(goal.id, {
+        title,
+        targetAmount: targetNum,
+        deadline: new Date(Date.now() + deadlineDays * 86400000).toISOString(),
+        emoji,
+        color,
+      });
+      Toast.show({ type: "success", text1: "Goal Updated", text2: `"${title}" has been updated.` });
+      onClose();
+    } catch (err) {
+      console.error("Failed to update goal:", err);
+      Toast.show({ type: "error", text1: "Update Failed", text2: "Could not update goal. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal visible={!!goalId} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={[styles.sheetContainer, { backgroundColor: C.backgroundCard }]}>
+        <View style={[styles.sheetHeader, { borderBottomColor: C.border }]}>
+          <Text style={[styles.sheetTitle, { color: C.text }]}>Edit Goal</Text>
+          <Pressable onPress={onClose} style={styles.closeBtn}>
+            <Feather name="x" size={22} color={C.textSecondary} />
+          </Pressable>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + 24 }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Pick an emoji</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            <View style={styles.emojiRow}>
+              {EMOJIS.map((e) => (
+                <Pressable
+                  key={e}
+                  onPress={() => setEmoji(e)}
+                  style={[
+                    styles.emojiBtn,
+                    { backgroundColor: emoji === e ? C.tintLight : C.backgroundSecondary },
+                  ]}
+                >
+                  <Text style={styles.emojiText}>{e}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+
+          <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Goal Name</Text>
+          <TextInput
+            style={[styles.sheetInput, { borderColor: C.border, color: C.text, backgroundColor: C.backgroundSecondary }]}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="e.g. New Laptop"
+            placeholderTextColor={C.textTertiary}
+          />
+
+          <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>Target Amount (BDT)</Text>
+          <TextInput
+            style={[styles.sheetInput, { borderColor: C.border, color: C.text, backgroundColor: C.backgroundSecondary }]}
+            value={target}
+            onChangeText={setTarget}
+            placeholder="1000"
+            placeholderTextColor={C.textTertiary}
+            keyboardType="decimal-pad"
+          />
+
+          <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>New Deadline</Text>
+          <View style={styles.presetRow}>
+            {DEADLINE_PRESETS.map((preset, idx) => (
+              <Pressable
+                key={preset.days}
+                onPress={() => setSelectedPreset(idx)}
+                style={[
+                  styles.presetBtn,
+                  {
+                    backgroundColor: selectedPreset === idx ? C.tint : C.backgroundSecondary,
+                    borderColor: selectedPreset === idx ? C.tint : C.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.presetBtnText,
+                    { color: selectedPreset === idx ? "#fff" : C.text },
+                  ]}
+                >
+                  {preset.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.deadlineHint, { color: C.textTertiary }]}>
+            Target date: {formatDate(new Date(Date.now() + DEADLINE_PRESETS[selectedPreset].days * 86400000).toISOString())}
+          </Text>
+
+          <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 16 }]}>Color</Text>
+          <View style={styles.colorRow}>
+            {COLORS.map((c) => (
+              <Pressable
+                key={c}
+                onPress={() => setColor(c)}
+                style={[
+                  styles.colorSwatch,
+                  { backgroundColor: c },
+                  color === c && styles.colorSwatchSelected,
+                ]}
+              >
+                {color === c && <Feather name="check" size={14} color="#fff" />}
+              </Pressable>
+            ))}
+          </View>
+
+          <Pressable
+            onPress={handleSave}
+            disabled={loading || !title || !target}
+            style={[styles.createBtn, { backgroundColor: color, opacity: loading || !title || !target ? 0.6 : 1 }]}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.createBtnText}>Save Changes</Text>
+            )}
           </Pressable>
         </ScrollView>
       </View>
@@ -227,17 +503,46 @@ function ContributeSheet({ goalId, onClose }: { goalId: string | null; onClose: 
   const { savingGoals, updateSavingGoal } = useFinance();
   const goal = savingGoals.find((g) => g.id === goalId);
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleContribute = () => {
-    if (!goal || !amount) return;
+  // Reset form state when modal opens/closes
+  useEffect(() => {
+    if (goalId) {
+      setAmount("");
+      setLoading(false);
+    }
+  }, [goalId]);
+
+  const handleContribute = async () => {
+    if (!goal || !amount || loading) return;
     const parsed = parseFloat(amount);
     if (isNaN(parsed) || parsed <= 0) return;
+
+    const remaining = goal.targetAmount - goal.savedAmount;
+    if (parsed > remaining) {
+      Toast.show({
+        type: "error",
+        text1: "Exceeds Target",
+        text2: `You only need ${formatAmount(remaining)} more to reach your goal.`,
+      });
+      return;
+    }
+
+    setLoading(true);
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-    updateSavingGoal(goal.id, goal.savedAmount + parsed);
-    setAmount("");
-    onClose();
+
+    try {
+      await updateSavingGoal(goal.id, goal.savedAmount + parsed);
+      Toast.show({ type: "success", text1: "Funds Added", text2: `Added ${formatAmount(parsed)} to "${goal.title}".` });
+      onClose();
+    } catch (err) {
+      console.error("Failed to add funds:", err);
+      Toast.show({ type: "error", text1: "Failed", text2: "Could not add funds. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -255,11 +560,15 @@ function ContributeSheet({ goalId, onClose }: { goalId: string | null; onClose: 
               {goal.emoji} {goal.title}
             </Text>
             <Text style={[styles.contributeProgress, { color: C.textSecondary }]}>
-              {formatAmount(goal.savedAmount, 2)} / {formatAmount(goal.targetAmount, 2)}
+              {formatAmount(goal.savedAmount)} / {formatAmount(goal.targetAmount)}
             </Text>
-            <ProgressBar progress={goal.savedAmount / goal.targetAmount} color={goal.color} height={8} style={{ marginVertical: 16 }} />
+            <ProgressBar progress={Math.min(1, goal.savedAmount / goal.targetAmount)} color={goal.color} height={8} style={{ marginVertical: 16 }} />
 
-            <Text style={[styles.sheetLabel, { color: C.textSecondary }]}>Amount to add (BDT)</Text>
+            <Text style={[styles.contributeRemaining, { color: C.textSecondary }]}>
+              {formatAmount(goal.targetAmount - goal.savedAmount)} remaining
+            </Text>
+
+            <Text style={[styles.sheetLabel, { color: C.textSecondary, marginTop: 12 }]}>Amount to add (BDT)</Text>
             <TextInput
               style={[styles.sheetInput, { borderColor: C.border, color: C.text, backgroundColor: C.backgroundSecondary }]}
               value={amount}
@@ -272,9 +581,14 @@ function ContributeSheet({ goalId, onClose }: { goalId: string | null; onClose: 
 
             <Pressable
               onPress={handleContribute}
-              style={[styles.createBtn, { backgroundColor: goal.color, marginTop: 20 }]}
+              disabled={loading || !amount}
+              style={[styles.createBtn, { backgroundColor: goal.color, marginTop: 20, opacity: loading || !amount ? 0.6 : 1 }]}
             >
-              <Text style={styles.createBtnText}>Add Funds</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.createBtnText}>Add Funds</Text>
+              )}
             </Pressable>
           </View>
         </View>
@@ -289,6 +603,7 @@ export default function GoalsScreen() {
   const bottomPad = Platform.OS === "web" ? 84 + 34 : insets.bottom + 80;
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [contributeGoalId, setContributeGoalId] = useState<string | null>(null);
+  const [editGoalId, setEditGoalId] = useState<string | null>(null);
   const { savingGoals, deleteSavingGoal } = useFinance();
 
   const totalSaved = savingGoals.reduce((s, g) => s + g.savedAmount, 0);
@@ -300,11 +615,16 @@ export default function GoalsScreen() {
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => {
+        onPress: async () => {
           if (Platform.OS !== "web") {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           }
-          deleteSavingGoal(id);
+          try {
+            await deleteSavingGoal(id);
+            Toast.show({ type: "success", text1: "Goal Deleted", text2: "The goal has been removed." });
+          } catch (err) {
+            Toast.show({ type: "error", text1: "Delete Failed", text2: "Could not delete goal." });
+          }
         },
       },
     ]);
@@ -380,6 +700,7 @@ export default function GoalsScreen() {
                 <GoalCard
                   key={goal.id}
                   goal={goal}
+                  onEdit={setEditGoalId}
                   onDelete={handleDelete}
                   onContribute={setContributeGoalId}
                 />
@@ -390,6 +711,7 @@ export default function GoalsScreen() {
       </ScrollView>
 
       <AddGoalSheet visible={showAddSheet} onClose={() => setShowAddSheet(false)} />
+      <EditGoalSheet goalId={editGoalId} onClose={() => setEditGoalId(null)} />
       <ContributeSheet goalId={contributeGoalId} onClose={() => setContributeGoalId(null)} />
     </>
   );
@@ -484,8 +806,12 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     marginTop: 2,
   },
-  deleteBtn: {
-    padding: 4,
+  cardActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionBtn: {
+    padding: 6,
   },
   goalAmounts: {
     flexDirection: "row",
@@ -608,6 +934,26 @@ const styles = StyleSheet.create({
   emojiText: {
     fontSize: 22,
   },
+  presetRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  presetBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  presetBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+  },
+  deadlineHint: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginTop: 8,
+  },
   colorRow: {
     flexDirection: "row",
     gap: 12,
@@ -646,5 +992,10 @@ const styles = StyleSheet.create({
   contributeProgress: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
+  },
+  contributeRemaining: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
   },
 });

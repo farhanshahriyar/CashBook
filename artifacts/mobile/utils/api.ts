@@ -1,9 +1,16 @@
 import { Platform } from "react-native";
 
-// Use your PC's LAN IP so physical devices (Expo Go) can reach the API server
-const API_BASE_URL = Platform.OS === "web"
+// ── API Base URL ──────────────────────────────────────────────────
+// In production set EXPO_PUBLIC_API_URL in your .env (or app.config)
+// to your Vercel deployment URL, e.g. https://your-app.vercel.app
+// For local development it falls back to localhost / LAN IP.
+const PROD_API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+const DEV_API_URL = Platform.OS === "web"
   ? "http://localhost:3000/api"
   : "http://192.168.0.105:3000/api";
+
+const API_BASE_URL = PROD_API_URL ?? DEV_API_URL;
 
 type RequestOptions = {
   method?: string;
@@ -130,6 +137,16 @@ export function updateGoalSavedAmount(
   return apiRequest<ApiSavingGoal>(`/goals/${id}`, {
     method: "PUT",
     body: { savedAmount },
+  });
+}
+
+export function updateGoal(
+  id: string,
+  data: Partial<Omit<ApiSavingGoal, "id">>
+): Promise<ApiSavingGoal> {
+  return apiRequest<ApiSavingGoal>(`/goals/${id}`, {
+    method: "PUT",
+    body: data,
   });
 }
 

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { savingGoalsTable } from "@workspace/db/schema";
+import { savingGoalsTable, insertSavingGoalSchema } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
@@ -32,16 +32,24 @@ router.post("/", async (req, res) => {
   try {
     const { title, targetAmount, savedAmount, deadline, emoji, color } = req.body;
 
+    // Validate input
+    const parsed = insertSavingGoalSchema.safeParse({
+      title,
+      targetAmount: String(targetAmount),
+      savedAmount: String(savedAmount || 0),
+      deadline: new Date(deadline),
+      emoji,
+      color,
+    });
+
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid input", details: parsed.error.issues });
+      return;
+    }
+
     const [goal] = await db
       .insert(savingGoalsTable)
-      .values({
-        title,
-        targetAmount: String(targetAmount),
-        savedAmount: String(savedAmount || 0),
-        deadline: new Date(deadline),
-        emoji,
-        color,
-      })
+      .values(parsed.data)
       .returning();
 
     res.status(201).json({
@@ -59,17 +67,31 @@ router.post("/", async (req, res) => {
   }
 });
 
-// PUT /api/goals/:id - Update a goal's saved amount
+// PUT /api/goals/:id - Update a goal
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { savedAmount } = req.body;
+    const { title, targetAmount, savedAmount, deadline, emoji, color } = req.body;
+
+    // Build update set from provided fields
+    const updateSet: Record<string, unknown> = { updatedAt: new Date() };
+    if (title !== undefined) updateSet.title = title;
+    if (targetAmount !== undefined) updateSet.targetAmount = String(targetAmount);
+    if (savedAmount !== undefined) updateSet.savedAmount = String(savedAmount);
+    if (deadline !== undefined) updateSet.deadline = new Date(deadline);
+    if (emoji !== undefined) updateSet.emoji = emoji;
+    if (color !== undefined) updateSet.color = color;
 
     const [goal] = await db
       .update(savingGoalsTable)
-      .set({ savedAmount: String(savedAmount), updatedAt: new Date() })
+      .set(updateSet)
       .where(eq(savingGoalsTable.id, id))
       .returning();
+
+    if (!goal) {
+      res.status(404).json({ error: "Goal not found" });
+      return;
+    }
 
     res.json({
       id: goal.id,

@@ -25,7 +25,22 @@ app.use(
     },
   }),
 );
-app.use(cors());
+
+// ── CORS ──────────────────────────────────────────────────────────
+// Allow every origin so the Expo/React-Native client (which may run
+// from localhost, a LAN IP, or an Expo tunnel) never hits a CORS wall.
+app.use(
+  cors({
+    origin: true,               // reflect the request origin
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  }),
+);
+
+// Explicitly handle preflight so Vercel never returns 405 for OPTIONS
+app.options("*", cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -19,6 +19,7 @@ import Colors from "@/constants/colors";
 import { CURRENCY_SYMBOL } from "@/utils/currency";
 import { useFinance } from "@/context/FinanceContext";
 import { useAuth } from "@/context/AuthContext";
+import { useAppLock } from "@/context/AppLockContext";
 import { formatAmount } from "@/utils/currency";
 import { supabase } from "@/utils/supabase";
 
@@ -300,7 +301,9 @@ export default function ProfileScreen() {
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [weeklyReport, setWeeklyReport] = useState(true);
-  const [biometricLock, setBiometricLock] = useState(false);
+
+  // Real AppLock state
+  const { isAppLockEnabled, toggleAppLock, isBiometricAvailable } = useAppLock();
 
   const handleClearData = () => {
     Alert.alert(
@@ -490,7 +493,8 @@ export default function ProfileScreen() {
               }
             />
             <View style={[styles.rowDivider, { backgroundColor: C.borderLight }]} />
-            <SettingRow
+            {/* dark/light mode implement future */}
+            {/* <SettingRow
               icon="sun"
               iconBg="#FEE2E2"
               iconColor="#DC2626"
@@ -499,7 +503,7 @@ export default function ProfileScreen() {
               onPress={() =>
                 Alert.alert("Theme", "Light theme is active. Dark mode coming soon.")
               }
-            />
+            /> */}
           </View>
 
           {/* Security */}
@@ -513,15 +517,20 @@ export default function ProfileScreen() {
               showChevron={false}
               rightElement={
                 <Switch
-                  value={biometricLock}
-                  onValueChange={(v) => {
+                  value={isAppLockEnabled}
+                  disabled={!isBiometricAvailable}
+                  onValueChange={async () => {
                     if (Platform.OS !== "web") {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     }
-                    setBiometricLock(v);
+                    if (!isBiometricAvailable) {
+                      Alert.alert("Not Supported", "Biometric authentication is not set up or supported on this device.");
+                      return;
+                    }
+                    await toggleAppLock();
                   }}
                   trackColor={{ false: C.border, true: C.tint + "80" }}
-                  thumbColor={biometricLock ? C.tint : C.textTertiary}
+                  thumbColor={isAppLockEnabled ? C.tint : C.textTertiary}
                 />
               }
             />
@@ -576,9 +585,9 @@ export default function ProfileScreen() {
               onPress={() => {
                 Alert.alert("Sign Out", "Are you sure you want to sign out?", [
                   { text: "Cancel", style: "cancel" },
-                  { 
-                    text: "Sign Out", 
-                    style: "destructive", 
+                  {
+                    text: "Sign Out",
+                    style: "destructive",
                     onPress: () => {
                       Toast.show({
                         type: "info",

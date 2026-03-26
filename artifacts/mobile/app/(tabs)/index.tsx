@@ -140,7 +140,7 @@ export default function OverviewScreen() {
         />
 
         <View style={styles.body}>
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: C.text }]}>Budget Overview</Text>
               <Text style={[styles.sectionLink, { color: C.tint }]}>This month</Text>
@@ -187,7 +187,7 @@ export default function OverviewScreen() {
                 })
               )}
             </Card>
-          </View>
+          </View> */}
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
