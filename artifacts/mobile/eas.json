@@ -14,12 +14,24 @@
     "production": {
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "ignore": [
+        ".claude/**",
+        ".pnpm-store/**",
+        "**/node_modules/**",
+        "**/.git/**"
+      ]
     },
     "apk": {
       "android": {
         "buildType": "apk"
-      }
+      },
+      "ignore": [
+        ".claude/**",
+        ".pnpm-store/**",
+        "**/node_modules/**",
+        "**/.git/**"
+      ]
     }
   }
 }
