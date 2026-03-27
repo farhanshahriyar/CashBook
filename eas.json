@@ -1,4 +1,5 @@
 {
+  "monorepo": true,
   "cli": {
     "version": ">= 18.0.6",
     "appVersionSource": "local"
