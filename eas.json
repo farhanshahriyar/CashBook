@@ -5,10 +5,22 @@
     "appVersionSource": "local"
   },
   "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "withoutCredentials": true
+      }
+    },
     "production": {
       "package": "artifacts/mobile",
       "android": {
         "buildType": "app-bundle"
+      }
+    },
+    "apk": {
+      "package": "artifacts/mobile",
+      "android": {
+        "buildType": "apk"
       }
     }
   }
