@@ -3,7 +3,7 @@ import { StyleSheet, View, ViewStyle } from "react-native";
 import Colors from "@/constants/colors";
 
 type CardProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   style?: ViewStyle;
   padding?: number;
   elevated?: boolean;

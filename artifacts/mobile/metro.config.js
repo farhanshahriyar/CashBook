@@ -7,7 +7,7 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 const config = getDefaultConfig(projectRoot);
 
 // Watch the workspace root for shared packages (lib/db, etc.)
-config.watchFolders = [workspaceRoot];
+config.watchFolders = [...(config.watchFolders || []), workspaceRoot];
 
 // Avoid watching heavy/unnecessary dirs that cause OOM
 config.resolver.blockList = [
