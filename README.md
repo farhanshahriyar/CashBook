@@ -28,33 +28,41 @@ A premium, full-stack personal finance mobile application meticulously crafted f
 - **Authentication:** Supabase Auth
 - **Deployment:** Optimized for Vercel Serverless Functions Edge routing
 
-## 📁 Project Architecture
+## 📁 Project Architecture (Monorepo)
 
-- `/artifacts/mobile/` - The entire frontend Expo ecosystem (Screens, Modals, Shared Contexts).
-- `/artifacts/api-server/` - The backend Express server to handle complex data logic routines.
-- `/supabase/` - SQL configuration schema, initial migrations, and seed data scripts.
+The project leverages npm Workspaces for powerful local package separation:
+
+- `/artifacts/mobile/` - The React Native (Expo) mobile application (Screens, Contexts, UI Components).
+- `/artifacts/api-server/` - Express.js API handling advanced data routines and endpoints.
+- `/artifacts/mockup-sandbox/` - A Vite-powered sandbox (React + Tailwind) for web component and UI mockup prototyping.
+- `/lib/` - Shared internal libraries and utilities.
+  - `/lib/api-client-react/` - Generated TanStack Query client for robust, typesafe API fetching.
+  - `/lib/api-spec/` - OpenAPI schema definitions and Orval configurations.
+  - `/lib/api-zod/` - Generated Zod validation schemas for end-to-end type safety.
+  - `/lib/db/` - Drizzle ORM schema definitions and shared database logic.
+- `/scripts/` - Custom automation or structural scripts.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18+)
-- [pnpm](https://pnpm.io/) package manager
+- Local **npm** package manager
 - Expo Go app on your physical device, or an iOS/Android simulator.
 - A configured Supabase project (for both Auth & DB).
 
 ### Installation
 
 1. **Clone the repository:**
-   \`\`\`bash
+   ```bash
    git clone https://github.com/farhanshahriyar/CashBook.git
    cd CashBook
-   \`\`\`
+   ```
 
 2. **Install global workspace dependencies:**
-   \`\`\`bash
-   pnpm install
-   \`\`\`
+   ```bash
+   npm install
+   ```
 
 3. **Configure Environment Variables:**
    - Navigate to `/artifacts/mobile/` and copy the example environment configuration into a new `.env` file.
@@ -63,17 +71,40 @@ A premium, full-stack personal finance mobile application meticulously crafted f
 ### Running Locally
 
 **Start the Native Client:**
-\`\`\`bash
+```bash
 cd artifacts/mobile
 npx expo start
-\`\`\`
+```
 
-**Start the API Server (optional, for custom Vercel routes):**
-\`\`\`bash
+**Start the API Server (optional, for custom routes):**
+```bash
 cd artifacts/api-server
-pnpm run dev
-\`\`\`
+npm run serve
+```
 
 ## 🔒 Security
 
 CashBook does not share any telemetry or financial data with third parties. All context is tethered directly to your connected Supabase authentication layer, and protected locally inside the device keychain and biometric hardware enclaves.
+
+## 🗺️ Future Implementation Roadmap
+
+As CashBook evolves, the following features are prioritized for development:
+
+1. **Web Dashboard Expansion**
+   - Transform the current `mockup-sandbox` into a fully fleshed out React web dashboard for desktop power users.
+   - Synchronize layout functionality with the existing Supabase backend structure.
+
+2. **Advanced AI Spending Analytics**
+   - Intelligent trend forecasting based on historical expenses.
+   - ML-driven automated transaction categorization.
+
+3. **Push Notification Infrastructure**
+   - Active alerts when approaching budget limits or missed/delayed saving goal milestones.
+   - Daily/Weekly summary reports directly to the lock screen.
+
+4. **Multi-Currency & Bank Syncing**
+   - Real-time exchange limits and dual-currency balance views for international university students.
+   - Initial scoping for Plaid/Tink integrations to automatically import live bank records.
+
+5. **Gamification & Social Goals**
+   - Achievement badges, contribution streaks, and the ability to share a "Savings Goal" seamlessly with roommates or peers.
